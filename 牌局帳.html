@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<!-- 不讓搜尋引擎收錄這個頁面 -->
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+<meta name="googlebot" content="noindex, nofollow">
+<!-- 加入主畫面後的 App 設定 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="牌局帳">
+<meta name="theme-color" content="#1c1917">
+<title>牌 · 局 · 帳</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg1: #f5f1ea; --bg2: #ede6da; --ink: #1c1917; --ink2: #44403c;
+    --stone: #78716c; --stone-l: #a8a29e; --line: rgba(139,111,74,0.18);
+    --seal: #a0392c; --gold: #8b6f4a; --paper: #fdfbf7;
+    --win: #15803d; --lose: #be123c; --win-d: #6ee7b7; --lose-d: #fca5a5;
+  }
+  html, body { background: linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 100%); min-height: 100vh; }
+  body { font-family: "Noto Serif TC", "Songti SC", serif; padding-bottom: 120px; color: var(--ink); }
+  .num { font-family: 'JetBrains Mono', monospace; }
+  .display { font-family: 'Cormorant Garamond', serif; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 40px 18px 0; }
+  .card-sh { box-shadow: 0 1px 2px rgba(60,40,20,0.04), 0 8px 24px rgba(60,40,20,0.06); }
+  .ink-div { background: linear-gradient(90deg, transparent, var(--gold) 20%, var(--gold) 80%, transparent); height: 1px; }
+  .seal { background: var(--seal); color: var(--bg1); font-weight: 700; letter-spacing: 0.15em;
+          display: inline-flex; align-items: center; padding: 3px 11px; border-radius: 2px; font-size: 11px; }
+  .eyebrow { font-size: 11px; letter-spacing: 0.15em; color: var(--stone); text-transform: uppercase; }
+
+  /* header */
+  .h-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  h1.title { font-family: 'Cormorant Garamond', serif; font-size: clamp(44px, 9vw, 68px);
+             font-weight: 300; margin-top: 14px; line-height: 1.1; }
+  .subtitle { color: var(--stone); margin-top: 10px; letter-spacing: 0.08em; font-size: 13px; }
+
+  /* tools */
+  .tools { display: flex; gap: 9px; margin-top: 18px; flex-wrap: wrap; }
+  .btn-sm { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px;
+            border: 1px solid #d4c5a9; background: rgba(255,255,255,0.7); color: var(--ink2);
+            cursor: pointer; font-family: inherit; font-size: 13px; transition: all 0.15s; }
+  .btn-sm:active { background: #fff; transform: scale(0.97); }
+  .btn-sm svg { width: 14px; height: 14px; }
+
+  .note { background: rgba(139,111,74,0.1); border: 1px solid rgba(139,111,74,0.25);
+          border-radius: 10px; padding: 11px 15px; font-size: 12px; color: var(--stone);
+          line-height: 1.7; margin-top: 14px; }
+  .note b { color: var(--ink2); }
+
+  /* summary */
+  .cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-top: 26px; }
+  .scard { border-radius: 16px; padding: 16px; }
+  .scard .lbl { font-family:'Cormorant Garamond',serif; font-size: 19px; }
+  .scard .sub { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; margin-top: 2px; }
+  .scard .amt { font-size: clamp(20px, 5.5vw, 28px); font-weight: 300; letter-spacing: -0.02em; margin-top: 12px; display: block; }
+  .scard .cnt { font-size: 11px; margin-top: 7px; }
+
+  /* chart */
+  .panel { margin-top: 26px; background: rgba(255,255,255,0.6); border-radius: 18px; padding: 18px; }
+  .panel-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+  .panel-head h2 { font-family:'Cormorant Garamond',serif; font-size: 20px; font-weight: 500; }
+  #chart { width: 100%; height: 220px; }
+
+  /* records */
+  .rec-head { display: flex; align-items: baseline; justify-content: space-between; margin: 26px 2px 12px; }
+  .rec-head h2 { font-family:'Cormorant Garamond',serif; font-size: 20px; font-weight: 500; }
+  .sess { background: rgba(255,255,255,0.6); border: 1px solid var(--line); border-radius: 14px;
+          padding: 13px 16px; margin-bottom: 8px; }
+  .sess-top { display: flex; align-items: center; justify-content: space-between;
+              padding-bottom: 9px; border-bottom: 1px solid rgba(139,111,74,0.15); margin-bottom: 7px; }
+  .sess-date { font-size: 14px; color: var(--ink2); font-weight: 500; }
+  .sess-venue { font-size: 13px; color: var(--stone); margin-left: 9px; }
+  .sess-sum-lbl { font-size: 10px; letter-spacing: 0.12em; color: var(--stone-l); }
+  .sess-sum { font-size: 14px; font-weight: 700; margin-left: 6px; }
+  .prow { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; }
+  .prow .name { font-size: 13px; color: var(--ink2); }
+  .prow .val { font-size: 15px; font-weight: 600; }
+  .prow .none { font-size: 12px; color: #d6d3d1; }
+  .dbtn { background: none; border: none; cursor: pointer; padding: 4px; margin-left: 6px;
+          color: var(--stone-l); display: inline-flex; }
+  .empty { text-align: center; color: var(--stone-l); padding: 40px 0; font-size: 14px; }
+
+  /* FAB */
+  .fab { position: fixed; bottom: 28px; right: 20px; background: var(--ink); color: var(--bg1);
+         padding: 13px 22px; border-radius: 30px; font-weight: 500; letter-spacing: 0.08em;
+         border: none; cursor: pointer; font-family: inherit; font-size: 14px;
+         display: flex; align-items: center; gap: 7px; box-shadow: 0 6px 20px rgba(0,0,0,0.25); z-index: 30; }
+  .fab:active { transform: scale(0.96); }
+
+  /* modal */
+  .overlay { position: fixed; inset: 0; z-index: 50; display: none; align-items: flex-end;
+             justify-content: center; padding: 14px; background: rgba(28,25,23,0.5); backdrop-filter: blur(6px); }
+  .overlay.show { display: flex; }
+  .modal { background: var(--paper); border-radius: 22px 22px 18px 18px; max-width: 440px; width: 100%;
+           padding: 24px; box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+           animation: slideUp 0.28s cubic-bezier(0.16,1,0.3,1); max-height: 90vh; overflow-y: auto; }
+  @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal h2 { font-family:'Cormorant Garamond',serif; font-size: 28px; font-weight: 400; margin: 10px 0 4px; }
+  .modal .tag { color: var(--stone); font-size: 12px; letter-spacing: 0.08em; margin-bottom: 18px; }
+  .field { margin-bottom: 14px; }
+  .field > label { display: block; font-size: 11px; letter-spacing: 0.15em; color: var(--stone);
+                   text-transform: uppercase; margin-bottom: 7px; }
+  .ifield { background: #fdfbf7; border: 1px solid #d4c5a9; padding: 11px 12px; border-radius: 8px;
+            font-family: inherit; font-size: 16px; color: var(--ink); width: 100%; }
+  .ifield:focus { outline: none; border-color: var(--gold); }
+  .venues { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; }
+  .vbtn { padding: 9px 4px; border-radius: 8px; font-size: 14px; cursor: pointer; font-family: inherit;
+          background: var(--bg1); color: #5a4530; border: 1px solid #d4c5a9; transition: all 0.12s; }
+  .vbtn.on { background: var(--ink); color: var(--bg1); border-color: var(--ink); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .hint { font-size: 11px; color: var(--stone-l); margin-top: 2px; }
+  .actions { display: flex; gap: 10px; margin-top: 20px; }
+  .btn-g { flex: 1; background: transparent; color: #5a4530; padding: 12px; border-radius: 8px;
+           border: 1px solid #d4c5a9; font-weight: 500; cursor: pointer; font-family: inherit; font-size: 15px; }
+  .btn-p { flex: 1; background: var(--ink); color: var(--bg1); padding: 12px; border-radius: 8px;
+           font-weight: 500; letter-spacing: 0.08em; border: none; cursor: pointer; font-family: inherit; font-size: 15px; }
+  .btn-p:active, .btn-g:active { transform: scale(0.98); }
+
+  /* toast */
+  .toast { position: fixed; bottom: 86px; right: 20px; background: var(--ink); color: #f5f0e8;
+           padding: 11px 16px; border-radius: 10px; font-size: 13px; display: none; align-items: center;
+           gap: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 60; max-width: 260px; }
+  .toast.show { display: flex; animation: tIn 0.25s ease-out; }
+  @keyframes tIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+  .fu { opacity: 0; animation: fu 0.4s ease-out forwards; }
+  @keyframes fu { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="fu" style="animation-delay:.05s">
+    <div class="h-top">
+      <span class="seal">牌局</span>
+      <span class="eyebrow" id="year"></span>
+    </div>
+    <h1 class="title">牌 · 局 · 帳</h1>
+    <p class="subtitle">A record of fortune &amp; misfortune · Gary &amp; Joyce</p>
+
+    <div class="tools">
+      <button class="btn-sm" onclick="exportData()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        備份
+      </button>
+      <button class="btn-sm" onclick="document.getElementById('imp').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        還原備份
+      </button>
+      <input id="imp" type="file" accept=".json" style="display:none" onchange="importData(event)">
+    </div>
+
+    <div class="note">
+      💡 資料會自動存在這支手機裡，關掉也不會不見。換手機或想多一層保險時，按「<b>備份</b>」存一份檔案；需要時用「<b>還原備份</b>」載回來。
+    </div>
+
+    <div class="ink-div" style="margin-top:22px"></div>
+  </div>
+
+  <div class="cards" id="cards"></div>
+
+  <div class="panel fu" style="animation-delay:.3s" id="chartPanel">
+    <div class="panel-head">
+      <h2>累 計 走 勢</h2><span class="eyebrow">Cumulative</span>
+    </div>
+    <svg id="chart"></svg>
+  </div>
+
+  <div class="fu" style="animation-delay:.4s">
+    <div class="rec-head">
+      <h2>逐 場 明 細</h2><span class="eyebrow" id="sessCount"></span>
+    </div>
+    <div id="records"></div>
+  </div>
+</div>
+
+<button class="fab" onclick="openForm()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="17" height="17"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  新 增 記 錄
+</button>
+
+<div class="toast" id="toast"></div>
+
+<!-- 表單 -->
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeForm()">
+  <div class="modal">
+    <div class="h-top">
+      <span class="seal">新增</span><span class="eyebrow">New Entry</span>
+    </div>
+    <h2>記 一 筆</h2>
+    <p class="tag">輸贏只是過程，記得才是日子。</p>
+
+    <div class="field">
+      <label>日 期</label>
+      <input type="date" class="ifield num" id="fDate">
+    </div>
+    <div class="field">
+      <label>地 點</label>
+      <div class="venues" id="venues"></div>
+      <input type="text" class="ifield" id="fCustom" placeholder="輸入地點名稱" style="margin-top:8px;display:none">
+    </div>
+    <div class="two">
+      <div class="field" style="margin-bottom:0">
+        <label>Gary</label>
+        <input type="number" inputmode="numeric" class="ifield num" id="fGary" placeholder="±金額">
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>Joyce</label>
+        <input type="number" inputmode="numeric" class="ifield num" id="fJoyce" placeholder="±金額">
+      </div>
+    </div>
+    <p class="hint" style="margin-top:10px">贏為正數，輸為負數。空白者該筆不記。</p>
+
+    <div class="actions">
+      <button class="btn-g" onclick="closeForm()">取 消</button>
+      <button class="btn-p" onclick="addRecord()">確 認 入 帳</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'mahjong_tracker_data_v1';
+const VENUES = ['UE','龍也','麻將','官邸','家','其他'];
+let selectedVenue = 'UE';
+
+const SEED = {
+  gary: [
+    {date:'2026-01-02',venue:'UE',amount:-12500},{date:'2026-01-24',venue:'麻將',amount:-4000},
+    {date:'2026-01-31',venue:'龍也',amount:17000},{date:'2026-02-07',venue:'龍也',amount:18750},
+    {date:'2026-02-09',venue:'龍也',amount:7000},{date:'2026-02-11',venue:'龍也',amount:-25000},
+    {date:'2026-02-13',venue:'UE',amount:-50000},{date:'2026-02-20',venue:'UE',amount:15000},
+    {date:'2026-02-27',venue:'UE',amount:-10000},{date:'2026-02-28',venue:'UE',amount:-6000},
+    {date:'2026-03-13',venue:'UE',amount:15000},{date:'2026-03-14',venue:'UE',amount:1100},
+    {date:'2026-03-20',venue:'UE',amount:25000},{date:'2026-03-27',venue:'UE',amount:29000},
+    {date:'2026-04-03',venue:'麻將',amount:2100},{date:'2026-04-04',venue:'家',amount:4000},
+    {date:'2026-04-11',venue:'龍也',amount:-29000},{date:'2026-04-18',venue:'龍也',amount:-8000},
+    {date:'2026-04-24',venue:'官邸',amount:-45000},{date:'2026-05-01',venue:'官邸',amount:-38000},
+    {date:'2026-05-08',venue:'官邸',amount:30000}
+  ],
+  joyce: [
+    {date:'2026-01-02',venue:'UE',amount:-7500},{date:'2026-01-24',venue:'麻將',amount:-30000},
+    {date:'2026-01-31',venue:'龍也',amount:8000},{date:'2026-02-07',venue:'龍也',amount:8800},
+    {date:'2026-02-13',venue:'UE',amount:32000},{date:'2026-02-20',venue:'UE',amount:-10000},
+    {date:'2026-02-28',venue:'UE',amount:-52000},{date:'2026-03-13',venue:'UE',amount:-5000},
+    {date:'2026-03-14',venue:'UE',amount:-17200},{date:'2026-03-20',venue:'UE',amount:-10000},
+    {date:'2026-03-27',venue:'UE',amount:-27500},{date:'2026-03-28',venue:'UE',amount:24000},
+    {date:'2026-04-03',venue:'麻將',amount:1900},{date:'2026-04-04',venue:'家',amount:-4200},
+    {date:'2026-04-11',venue:'龍也',amount:0},{date:'2026-04-18',venue:'龍也',amount:22000},
+    {date:'2026-04-24',venue:'官邸',amount:9000},{date:'2026-05-01',venue:'官邸',amount:-25000},
+    {date:'2026-05-08',venue:'官邸',amount:-12800}
+  ]
+};
+
+let data = load();
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) { const p = JSON.parse(raw); if (p.gary && p.joyce) return p; }
+  } catch(e){}
+  // 首次使用 → 灌入舊資料並存檔
+  const init = JSON.parse(JSON.stringify(SEED));
+  save(init);
+  return init;
+}
+function save(d) {
+  data = d;
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+  catch(e){ toast('儲存失敗，請改用備份功能', false); }
+}
+
+const fmt = n => n===null||n===undefined ? '—' : n===0 ? '0' : (n>0?'+':'−')+Math.abs(n).toLocaleString();
+const fmtDate = d => { const [,m,day]=d.split('-'); return parseInt(m)+'/'+parseInt(day); };
+const color = n => n===0 ? 'var(--stone)' : n>0 ? 'var(--win)' : 'var(--lose)';
+const sum = a => a.reduce((s,r)=>s+r.amount,0);
+
+function render() {
+  document.getElementById('year').textContent = new Date().getFullYear() + ' · Annual Log';
+
+  const gT = sum(data.gary), jT = sum(data.joyce), cT = gT+jT;
+  const cardDefs = [
+    {lbl:'Gary', sub:'先生', t:gT, c:data.gary.length, feat:false},
+    {lbl:'Joyce', sub:'太太', t:jT, c:data.joyce.length, feat:false},
+    {lbl:'合計', sub:'Combined', t:cT, c:data.gary.length+data.joyce.length, feat:true},
+  ];
+  document.getElementById('cards').innerHTML = cardDefs.map((c,i)=>{
+    const pos = c.t>=0;
+    const bg = c.feat ? 'var(--ink)' : 'rgba(255,255,255,0.7)';
+    const tMain = c.feat ? '#faf7f2' : 'var(--ink)';
+    const tSub = c.feat ? 'var(--stone-l)' : 'var(--stone)';
+    const ac = pos ? (c.feat?'var(--win-d)':'var(--win)') : (c.feat?'var(--lose-d)':'var(--lose)');
+    return `<div class="scard card-sh fu" style="background:${bg};animation-delay:${.15+i*.07}s">
+      <div class="lbl" style="color:${tMain}">${c.lbl}</div>
+      <div class="sub" style="color:${tSub}">${c.sub}</div>
+      <span class="amt num" style="color:${ac}">${fmt(c.t)}</span>
+      <div class="cnt" style="color:${tSub}">${c.c} 場記錄</div>
+    </div>`;
+  }).join('');
+
+  drawChart();
+  renderRecords();
+}
+
+function renderRecords() {
+  const groups = {};
+  data.gary.forEach(r=>{ const k=r.date+'__'+r.venue; (groups[k]=groups[k]||{date:r.date,venue:r.venue,gary:null,joyce:null}).gary=r.amount; });
+  data.joyce.forEach(r=>{ const k=r.date+'__'+r.venue; (groups[k]=groups[k]||{date:r.date,venue:r.venue,gary:null,joyce:null}).joyce=r.amount; });
+  const list = Object.values(groups).sort((a,b)=>b.date.localeCompare(a.date));
+
+  document.getElementById('sessCount').textContent = list.length + ' 場';
+
+  if (!list.length) { document.getElementById('records').innerHTML = '<div class="empty">尚無記錄</div>'; return; }
+
+  document.getElementById('records').innerHTML = list.map(row=>{
+    const ds = (row.gary??0)+(row.joyce??0);
+    const personRow = (name, amt) => `
+      <div class="prow">
+        <span class="name">${name}</span>
+        <span>${amt!==null
+          ? `<span class="val num" style="color:${color(amt)}">${fmt(amt)}</span>
+             <button class="dbtn" onclick="del('${name.toLowerCase()}','${row.date}','${row.venue}',${amt})">
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+             </button>`
+          : `<span class="none">未記錄</span>`}</span>
+      </div>`;
+    return `<div class="sess">
+      <div class="sess-top">
+        <div><span class="sess-date num">${fmtDate(row.date)}</span><span class="sess-venue">${row.venue}</span></div>
+        <div><span class="sess-sum-lbl">合計</span><span class="sess-sum num" style="color:${color(ds)}">${fmt(ds)}</span></div>
+      </div>
+      ${personRow('Gary', row.gary)}
+      ${personRow('Joyce', row.joyce)}
+    </div>`;
+  }).join('');
+}
+
+function drawChart() {
+  const svg = document.getElementById('chart');
+  const dates = [...new Set([...data.gary.map(r=>r.date),...data.joyce.map(r=>r.date)])].sort();
+  if (!dates.length) { svg.innerHTML=''; return; }
+  let g=0,j=0;
+  const pts = dates.map(d=>{
+    g += data.gary.filter(r=>r.date===d).reduce((s,r)=>s+r.amount,0);
+    j += data.joyce.filter(r=>r.date===d).reduce((s,r)=>s+r.amount,0);
+    return {d, g, j, c:g+j};
+  });
+
+  const W = svg.clientWidth || 680, H = 220, P = {t:14,r:10,b:22,l:38};
+  const all = pts.flatMap(p=>[p.g,p.j,p.c]).concat(0);
+  let min = Math.min(...all), max = Math.max(...all);
+  if (min===max){min-=1000;max+=1000;}
+  const pad = (max-min)*0.1; min-=pad; max+=pad;
+  const X = i => P.l + i*(W-P.l-P.r)/Math.max(1,pts.length-1);
+  const Y = v => P.t + (max-v)/(max-min)*(H-P.t-P.b);
+
+  const line = (key,stroke,dash) => {
+    const dd = pts.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(p[key]).toFixed(1)).join(' ');
+    return `<path d="${dd}" fill="none" stroke="${stroke}" stroke-width="2" ${dash?`stroke-dasharray="${dash}"`:''} stroke-linejoin="round"/>`;
+  };
+  const dots = (key,fill) => pts.map((p,i)=>`<circle cx="${X(i).toFixed(1)}" cy="${Y(p[key]).toFixed(1)}" r="2.5" fill="${fill}"/>`).join('');
+
+  // x labels (稀疏)
+  const step = Math.ceil(pts.length/6);
+  const xl = pts.map((p,i)=> i%step===0 ? `<text x="${X(i)}" y="${H-6}" font-size="10" fill="#7a6850" text-anchor="middle" font-family="JetBrains Mono">${fmtDate(p.d)}</text>` : '').join('');
+  // y zero line
+  const zeroY = Y(0);
+  const yLabels = [max, (max+min)/2, min].map(v=>`<text x="${P.l-6}" y="${Y(v)+3}" font-size="9" fill="#7a6850" text-anchor="end" font-family="JetBrains Mono">${v>0?'+':v<0?'−':''}${Math.abs(Math.round(v/1000))}k</text>`).join('');
+
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.innerHTML = `
+    <line x1="${P.l}" y1="${zeroY}" x2="${W-P.r}" y2="${zeroY}" stroke="#8b6f4a" stroke-width="1"/>
+    ${yLabels}${xl}
+    ${line('g','#3a5a7a')}${line('j','#a0392c')}${line('c','#3a2e1f','4 3')}
+    ${dots('g','#3a5a7a')}${dots('j','#a0392c')}
+    <g font-family="Noto Serif TC" font-size="11">
+      <rect x="${W-P.r-150}" y="6" width="9" height="9" fill="#3a5a7a"/><text x="${W-P.r-137}" y="14" fill="#57534e">Gary</text>
+      <rect x="${W-P.r-95}" y="6" width="9" height="9" fill="#a0392c"/><text x="${W-P.r-82}" y="14" fill="#57534e">Joyce</text>
+      <rect x="${W-P.r-40}" y="6" width="9" height="9" fill="#3a2e1f"/><text x="${W-P.r-27}" y="14" fill="#57534e">合計</text>
+    </g>`;
+}
+
+/* ── 表單 ── */
+function openForm() {
+  document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('fGary').value = '';
+  document.getElementById('fJoyce').value = '';
+  document.getElementById('fCustom').value = '';
+  selectedVenue = 'UE';
+  renderVenues();
+  document.getElementById('overlay').classList.add('show');
+}
+function closeForm() { document.getElementById('overlay').classList.remove('show'); }
+function renderVenues() {
+  document.getElementById('venues').innerHTML = VENUES.map(v=>
+    `<button class="vbtn ${v===selectedVenue?'on':''}" onclick="pickVenue('${v}')">${v}</button>`).join('');
+  document.getElementById('fCustom').style.display = selectedVenue==='其他' ? 'block' : 'none';
+}
+function pickVenue(v){ selectedVenue=v; renderVenues(); }
+
+function addRecord() {
+  const date = document.getElementById('fDate').value;
+  let venue = selectedVenue==='其他' ? document.getElementById('fCustom').value.trim() : selectedVenue;
+  if (!date || !venue) { alert('請選擇日期與地點'); return; }
+  const gs = document.getElementById('fGary').value;
+  const js = document.getElementById('fJoyce').value;
+  const ga = gs===''?null:Number(gs);
+  const ja = js===''?null:Number(js);
+  if (ga===null && ja===null) { alert('請至少填寫一個金額'); return; }
+
+  const next = { gary:[...data.gary], joyce:[...data.joyce] };
+  if (ga!==null && !isNaN(ga)) { next.gary.push({date,venue,amount:ga}); next.gary.sort((a,b)=>a.date.localeCompare(b.date)); }
+  if (ja!==null && !isNaN(ja)) { next.joyce.push({date,venue,amount:ja}); next.joyce.sort((a,b)=>a.date.localeCompare(b.date)); }
+  save(next);
+  closeForm();
+  render();
+  toast('記錄已存好 ✓');
+}
+
+function del(person, date, venue, amount) {
+  if (!confirm('確定刪除這筆記錄？')) return;
+  const arr = data[person];
+  const idx = arr.findIndex(r=>r.date===date && r.venue===venue && r.amount===amount);
+  if (idx===-1) return;
+  const next = {...data, [person]: arr.filter((_,i)=>i!==idx)};
+  save(next);
+  render();
+  toast('已刪除');
+}
+
+/* ── 備份 / 還原 ── */
+function exportData() {
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = '牌局帳_備份_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click(); URL.revokeObjectURL(url);
+  toast('備份已下載 📁');
+}
+function importData(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const p = JSON.parse(ev.target.result);
+      if (!p.gary || !p.joyce) throw 0;
+      save(p); render();
+      toast('已還原 '+(p.gary.length+p.joyce.length)+' 筆記錄');
+    } catch { toast('檔案格式錯誤', false); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+let toastTimer;
+function toast(msg, ok=true) {
+  const t = document.getElementById('toast');
+  t.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="${ok?'#6ee7b7':'#fca5a5'}" stroke-width="2.2" width="15" height="15"><polyline points="20 6 9 17 4 12"/></svg> ${msg}`;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+window.addEventListener('resize', drawChart);
+render();
+</script>
+</body>
+</html>
