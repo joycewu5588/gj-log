@@ -271,7 +271,7 @@ function load() {
 function save(d) {
   data = d;
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
-  catch(e){ toast('儲存失敗，請改用備份功能', false); }
+  catch(e){ try { toast('儲存失敗，請改用備份功能', false); } catch(_){} }
 }
 
 const fmt = n => n===null||n===undefined ? '—' : n===0 ? '0' : (n>0?'+':'−')+Math.abs(n).toLocaleString();
@@ -302,8 +302,8 @@ function render() {
     </div>`;
   }).join('');
 
-  drawChart();
   renderRecords();
+  try { drawChart(); } catch(e) { /* 走勢圖出錯也不影響其他內容 */ }
 }
 
 function renderRecords() {
@@ -459,14 +459,26 @@ function importData(e) {
 let toastTimer;
 function toast(msg, ok=true) {
   const t = document.getElementById('toast');
+  if (!t) return;
   t.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="${ok?'#6ee7b7':'#fca5a5'}" stroke-width="2.2" width="15" height="15"><polyline points="20 6 9 17 4 12"/></svg> ${msg}`;
   t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(()=>t.classList.remove('show'), 2600);
 }
 
-window.addEventListener('resize', drawChart);
-render();
+function boot() {
+  try { render(); }
+  catch(e) {
+    const rec = document.getElementById('records');
+    if (rec) rec.innerHTML = '<div class="empty">載入時發生問題：' + (e && e.message ? e.message : e) + '</div>';
+  }
+}
+window.addEventListener('resize', function(){ try { drawChart(); } catch(e){} });
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}
 </script>
 </body>
 </html>
