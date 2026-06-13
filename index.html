@@ -364,15 +364,16 @@ function render() {
   document.getElementById('appdate').textContent = currentYear + ' · Annual Log';
   renderYearTabs();
 
-  // 場次 = 同一天同地點算一場（不論一人或兩人）
-  const sessKeys = new Set([...d.gary, ...d.joyce].map(r=>r.date+'__'+r.venue));
-  const sessionCount = sessKeys.size;
+  // 場次：各自算自己打了幾場（同一天同地點算一場）；合計為總場次
+  const garySess = new Set(d.gary.map(r=>r.date+'__'+r.venue)).size;
+  const joyceSess = new Set(d.joyce.map(r=>r.date+'__'+r.venue)).size;
+  const totalSess = new Set([...d.gary, ...d.joyce].map(r=>r.date+'__'+r.venue)).size;
 
   const gT = sum(d.gary), jT = sum(d.joyce), cT = gT+jT;
   const cardDefs = [
-    {lbl:'Gary', sub:'先生', t:gT, c:sessionCount, feat:false},
-    {lbl:'Joyce', sub:'太太', t:jT, c:sessionCount, feat:false},
-    {lbl:'合計', sub:'Combined', t:cT, c:sessionCount, feat:true},
+    {lbl:'Gary', sub:'先生', t:gT, c:garySess, feat:false},
+    {lbl:'Joyce', sub:'太太', t:jT, c:joyceSess, feat:false},
+    {lbl:'合計', sub:'Combined', t:cT, c:totalSess, feat:true},
   ];
   document.getElementById('cards').innerHTML = cardDefs.map((c,i)=>{
     const pos = c.t>=0;
