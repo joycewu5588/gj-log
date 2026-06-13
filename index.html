@@ -113,6 +113,11 @@
   .vbtn { padding: 9px 4px; border-radius: 8px; font-size: 14px; cursor: pointer; font-family: inherit;
           background: var(--bg1); color: #5a4530; border: 1px solid #d4c5a9; transition: all 0.12s; }
   .vbtn.on { background: var(--ink); color: var(--bg1); border-color: var(--ink); }
+  .wl { display: flex; gap: 6px; }
+  .wlbtn { flex: 1; padding: 8px 0; border-radius: 7px; font-size: 14px; font-family: inherit;
+           cursor: pointer; border: 1px solid #d4c5a9; background: var(--bg1); color: #5a4530; }
+  .wlbtn.win.on { background: var(--win); color: #fff; border-color: var(--win); }
+  .wlbtn.lose.on { background: var(--lose); color: #fff; border-color: var(--lose); }
   .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .hint { font-size: 11px; color: var(--stone-l); margin-top: 2px; }
   .actions { display: flex; gap: 10px; margin-top: 20px; }
@@ -207,14 +212,22 @@
     <div class="two">
       <div class="field" style="margin-bottom:0">
         <label>Gary</label>
-        <input type="number" inputmode="numeric" class="ifield num" id="fGary" placeholder="±金額">
+        <div class="wl" id="wlGary">
+          <button type="button" class="wlbtn win on" onclick="setWL('Gary','win')">贏</button>
+          <button type="button" class="wlbtn lose" onclick="setWL('Gary','lose')">輸</button>
+        </div>
+        <input type="number" inputmode="decimal" class="ifield num" id="fGary" placeholder="金額" style="margin-top:7px">
       </div>
       <div class="field" style="margin-bottom:0">
         <label>Joyce</label>
-        <input type="number" inputmode="numeric" class="ifield num" id="fJoyce" placeholder="±金額">
+        <div class="wl" id="wlJoyce">
+          <button type="button" class="wlbtn win on" onclick="setWL('Joyce','win')">贏</button>
+          <button type="button" class="wlbtn lose" onclick="setWL('Joyce','lose')">輸</button>
+        </div>
+        <input type="number" inputmode="decimal" class="ifield num" id="fJoyce" placeholder="金額" style="margin-top:7px">
       </div>
     </div>
-    <p class="hint" style="margin-top:10px">贏為正數，輸為負數。空白者該筆不記。</p>
+    <p class="hint" style="margin-top:10px">先選「贏」或「輸」，再打金額（不用打正負號）。沒打的人留空即可。</p>
 
     <div class="actions">
       <button class="btn-g" onclick="closeForm()">取 消</button>
@@ -268,7 +281,8 @@ const SEED = {
   ]
 };
 
-let data = load();
+var data;
+data = load();
 
 function load() {
   // 網址帶 ?reset 時，強制清掉舊存檔、重新灌入完整資料
@@ -409,11 +423,19 @@ function drawChart() {
 }
 
 /* ── 表單 ── */
+var wlState = { Gary: 'win', Joyce: 'win' };
+function setWL(person, val) {
+  wlState[person] = val;
+  const box = document.getElementById('wl' + person);
+  box.querySelector('.win').classList.toggle('on', val === 'win');
+  box.querySelector('.lose').classList.toggle('on', val === 'lose');
+}
 function openForm() {
   document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
   document.getElementById('fGary').value = '';
   document.getElementById('fJoyce').value = '';
   document.getElementById('fCustom').value = '';
+  setWL('Gary','win'); setWL('Joyce','win');
   selectedVenue = 'UE';
   renderVenues();
   document.getElementById('overlay').classList.add('show');
@@ -432,8 +454,10 @@ function addRecord() {
   if (!date || !venue) { alert('請選擇日期與地點'); return; }
   const gs = document.getElementById('fGary').value;
   const js = document.getElementById('fJoyce').value;
-  const ga = gs===''?null:Number(gs);
-  const ja = js===''?null:Number(js);
+  let ga = gs===''?null:Math.abs(Number(gs));
+  let ja = js===''?null:Math.abs(Number(js));
+  if (ga!==null && wlState.Gary==='lose') ga = -ga;
+  if (ja!==null && wlState.Joyce==='lose') ja = -ja;
   if (ga===null && ja===null) { alert('請至少填寫一個金額'); return; }
 
   const next = { gary:[...data.gary], joyce:[...data.joyce] };
