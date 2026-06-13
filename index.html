@@ -224,6 +224,18 @@
 </div>
 
 <script>
+// 全域錯誤捕捉：把真正的錯誤顯示在畫面最上方，方便除錯
+window.onerror = function(msg, src, line, col, err) {
+  var box = document.getElementById('errbox');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'errbox';
+    box.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#a0392c;color:#fff;padding:10px 14px;font-size:12px;font-family:monospace;line-height:1.5;white-space:pre-wrap;word-break:break-all;';
+    document.body.appendChild(box);
+  }
+  box.textContent = '錯誤：' + msg + '\n位置：第 ' + line + ' 行 第 ' + col + ' 列' + (err && err.stack ? '\n' + err.stack : '');
+  return false;
+};
 const STORAGE_KEY = 'mahjong_tracker_data_v1';
 const VENUES = ['UE','龍也','麻將','官邸','家','其他'];
 let selectedVenue = 'UE';
@@ -259,11 +271,23 @@ const SEED = {
 let data = load();
 
 function load() {
+  // 網址帶 ?reset 時，強制清掉舊存檔、重新灌入完整資料
+  try {
+    if (location.search.indexOf('reset') !== -1) {
+      const fresh = JSON.parse(JSON.stringify(SEED));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(fresh));
+      return fresh;
+    }
+  } catch(e){}
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) { const p = JSON.parse(raw); if (p.gary && p.joyce) return p; }
+    // 只有當存檔「真的有記錄」時才採用；空的或壞的就重灌
+    if (raw) {
+      const p = JSON.parse(raw);
+      if (p && p.gary && p.joyce && (p.gary.length + p.joyce.length) > 0) return p;
+    }
   } catch(e){}
-  // 首次使用 → 灌入舊資料並存檔
+  // 首次使用或存檔是空的 → 灌入舊資料並存檔
   const init = JSON.parse(JSON.stringify(SEED));
   save(init);
   return init;
