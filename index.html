@@ -50,6 +50,11 @@
   .btn-sm:active { background: #fff; transform: scale(0.97); }
   .btn-sm svg { width: 14px; height: 14px; }
 
+  .btn-add-inline { width: 100%; margin-top: 14px; background: var(--ink); color: var(--bg1);
+      padding: 14px; border-radius: 12px; font-weight: 500; letter-spacing: 0.1em; border: none;
+      cursor: pointer; font-family: inherit; font-size: 15px; display: flex; align-items: center;
+      justify-content: center; gap: 8px; }
+  .btn-add-inline:active { opacity: 0.85; }
   .note { background: rgba(139,111,74,0.1); border: 1px solid rgba(139,111,74,0.25);
           border-radius: 10px; padding: 11px 15px; font-size: 12px; color: var(--stone);
           line-height: 1.7; margin-top: 14px; }
@@ -168,6 +173,11 @@
       </button>
       <input id="imp" type="file" accept=".json" style="display:none" onchange="importData(event)">
     </div>
+
+    <button class="btn-add-inline" onclick="openForm()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      新 增 記 錄
+    </button>
 
     <div class="note">
       💡 資料會自動存在這支手機裡，關掉也不會不見。換手機或想多一層保險時，按「<b>備份</b>」存一份檔案；需要時用「<b>還原備份</b>」載回來。
@@ -301,6 +311,8 @@ function load() {
     if (location.search.indexOf('reset') !== -1) {
       const fresh = JSON.parse(JSON.stringify(SEED));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(fresh));
+      // 防呆：執行一次後把 reset 從網址移除，避免加入主畫面後每次開啟都洗掉資料
+      try { history.replaceState(null, '', location.pathname); } catch(_){}
       return fresh;
     }
   } catch(e){}
@@ -393,11 +405,15 @@ function render() {
   try { drawChart(); } catch(e) { /* 走勢圖出錯也不影響其他內容 */ }
 }
 
+// HTML 跳脫，避免地點名稱含特殊字元時破壞畫面
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
 function renderRecords() {
   const d = yearData();
   const groups = {};
-  d.gary.forEach(r=>{ const k=r.date+'__'+r.venue; (groups[k]=groups[k]||{date:r.date,venue:r.venue,gary:null,joyce:null}).gary=r.amount; });
-  d.joyce.forEach(r=>{ const k=r.date+'__'+r.venue; (groups[k]=groups[k]||{date:r.date,venue:r.venue,gary:null,joyce:null}).joyce=r.amount; });
+  // 同人同日同地點若有多筆，金額累加合併顯示（與總計一致）
+  d.gary.forEach(r=>{ const k=r.date+'__'+r.venue; const g=(groups[k]=groups[k]||{date:r.date,venue:r.venue,gary:null,joyce:null}); g.gary=(g.gary??0)+r.amount; });
+  d.joyce.forEach(r=>{ const k=r.date+'__'+r.venue; const g=(groups[k]=groups[k]||{date:r.date,venue:r.venue,gary:null,joyce:null}); g.joyce=(g.joyce??0)+r.amount; });
   const list = Object.values(groups).sort((a,b)=>b.date.localeCompare(a.date));
 
   document.getElementById('sessCount').textContent = list.length + ' 場';
@@ -411,14 +427,14 @@ function renderRecords() {
         <span class="name">${name}</span>
         <span>${amt!==null
           ? `<span class="val num" style="color:${color(amt)}">${fmt(amt)}</span>
-             <button class="dbtn" onclick="del('${name.toLowerCase()}','${row.date}','${row.venue}',${amt})">
+             <button class="dbtn" onclick="del('${name.toLowerCase()}','${row.date}',decodeURIComponent('${encodeURIComponent(row.venue)}'))">
                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
              </button>`
           : `<span class="none">未記錄</span>`}</span>
       </div>`;
     return `<div class="sess">
       <div class="sess-top">
-        <div><span class="sess-date num">${fmtDate(row.date)}</span><span class="sess-venue">${row.venue}</span></div>
+        <div><span class="sess-date num">${fmtDate(row.date)}</span><span class="sess-venue">${esc(row.venue)}</span></div>
         <div><span class="sess-sum-lbl">合計</span><span class="sess-sum num" style="color:${color(ds)}">${fmt(ds)}</span></div>
       </div>
       ${personRow('Gary', row.gary)}
@@ -481,8 +497,13 @@ function setWL(person, val) {
   box.querySelector('.win').classList.toggle('on', val === 'win');
   box.querySelector('.lose').classList.toggle('on', val === 'lose');
 }
+// 取得手機本地日期（修正時區問題：避免早上打開時日期變成昨天）
+function todayLocal() {
+  const n = new Date();
+  return n.getFullYear() + '-' + String(n.getMonth()+1).padStart(2,'0') + '-' + String(n.getDate()).padStart(2,'0');
+}
 function openForm() {
-  document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('fDate').value = todayLocal();
   document.getElementById('fGary').value = '';
   document.getElementById('fJoyce').value = '';
   document.getElementById('fCustom').value = '';
@@ -521,12 +542,11 @@ function addRecord() {
   toast('記錄已存好 ✓');
 }
 
-function del(person, date, venue, amount) {
+function del(person, date, venue) {
   if (!confirm('確定刪除這筆記錄？')) return;
   const arr = data[person];
-  const idx = arr.findIndex(r=>r.date===date && r.venue===venue && r.amount===amount);
-  if (idx===-1) return;
-  const next = {...data, [person]: arr.filter((_,i)=>i!==idx)};
+  const next = {...data, [person]: arr.filter(r=>!(r.date===date && r.venue===venue))};
+  if (next[person].length === arr.length) return;
   save(next);
   render();
   toast('已刪除');
@@ -537,7 +557,7 @@ function exportData() {
   const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = '牌局帳_備份_'+new Date().toISOString().slice(0,10)+'.json';
+  a.href = url; a.download = '水上日誌_備份_'+new Date().toISOString().slice(0,10)+'.json';
   a.click(); URL.revokeObjectURL(url);
   toast('備份已下載 📁');
 }
@@ -547,7 +567,11 @@ function importData(e) {
   reader.onload = ev => {
     try {
       const p = JSON.parse(ev.target.result);
-      if (!p.gary || !p.joyce) throw 0;
+      // 嚴格驗證：必須是陣列，且每筆都有正確的日期/地點/金額
+      const okRec = r => r && typeof r.date==='string' && /^\d{4}-\d{2}-\d{2}$/.test(r.date)
+                       && typeof r.venue==='string' && typeof r.amount==='number' && isFinite(r.amount);
+      if (!Array.isArray(p.gary) || !Array.isArray(p.joyce)
+          || !p.gary.every(okRec) || !p.joyce.every(okRec)) throw 0;
       save(p); render();
       toast('已還原 '+(p.gary.length+p.joyce.length)+' 筆記錄');
     } catch { toast('檔案格式錯誤', false); }
