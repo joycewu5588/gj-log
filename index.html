@@ -26,7 +26,7 @@
     --win: #15803d; --lose: #be123c; --win-d: #6ee7b7; --lose-d: #fca5a5;
   }
   html, body { background: linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 100%); min-height: 100vh; }
-  body { font-family: "Noto Serif TC", "Songti SC", serif; padding-bottom: 120px; color: var(--ink); }
+  body { font-family: "Noto Serif TC", "Songti SC", serif; padding-bottom: 48px; color: var(--ink); }
   .num { font-family: 'JetBrains Mono', monospace; }
   .display { font-family: 'Cormorant Garamond', serif; }
   .wrap { max-width: 720px; margin: 0 auto; padding: 40px 18px 0; }
@@ -93,13 +93,6 @@
           color: var(--stone-l); display: inline-flex; }
   .empty { text-align: center; color: var(--stone-l); padding: 40px 0; font-size: 14px; }
 
-  /* FAB */
-  .fab { position: fixed; bottom: 28px; right: 20px; background: var(--ink); color: var(--bg1);
-         padding: 13px 22px; border-radius: 30px; font-weight: 500; letter-spacing: 0.08em;
-         border: none; cursor: pointer; font-family: inherit; font-size: 14px;
-         display: flex; align-items: center; gap: 7px; box-shadow: 0 6px 20px rgba(0,0,0,0.25); z-index: 30; }
-  .fab:active { transform: scale(0.96); }
-
   /* modal */
   .overlay { position: fixed; inset: 0; z-index: 50; display: none; align-items: flex-end;
              justify-content: center; padding: 14px; background: rgba(28,25,23,0.5); backdrop-filter: blur(6px); }
@@ -140,7 +133,7 @@
   .btn-p:active, .btn-g:active { transform: scale(0.98); }
 
   /* toast */
-  .toast { position: fixed; bottom: 86px; right: 20px; background: var(--ink); color: #f5f0e8;
+  .toast { position: fixed; bottom: 24px; right: 20px; background: var(--ink); color: #f5f0e8;
            padding: 11px 16px; border-radius: 10px; font-size: 13px; display: none; align-items: center;
            gap: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 60; max-width: 260px; }
   .toast.show { display: flex; animation: tIn 0.25s ease-out; }
@@ -203,10 +196,6 @@
   </div>
 </div>
 
-<button class="fab" onclick="openForm()">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="17" height="17"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-  新 增 記 錄
-</button>
 
 <div class="toast" id="toast"></div>
 
